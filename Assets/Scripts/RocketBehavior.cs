@@ -5,33 +5,28 @@ using UnityEngine;
 
 public class RocketBehavior : MonoBehaviour
 {
-    [SerializeField] float verticalThrustFactor = 10f;
+    [SerializeField] float verticalThrustFactor = 900f;
     [SerializeField] float rotationalThrustFactor = 100f;
 
+    private const string friendlyTag = "Friendly";
+    private const string fuelTag = "Fuel";
 
     private AudioSource audioSource;
     private Rigidbody rigidBody;
 
-    private Vector3 thrustVector;
 
     // Start is called before the first frame update
     void Start()
     {
         rigidBody = GetComponent<Rigidbody>();
         audioSource = GetComponent<AudioSource>();
-
-        thrustVector = new Vector3(0, verticalThrustFactor, 0);
-
     }
 
     // Update is called once per frame
     void Update()
     {
-
         processVerticalThrust();
         processRotation();
-
-
     }
 
 
@@ -40,7 +35,7 @@ public class RocketBehavior : MonoBehaviour
     {
         if (Input.GetKey(KeyCode.Space))
         {
-            rigidBody.AddRelativeForce(Vector3.up * verticalThrustFactor);
+            rigidBody.AddRelativeForce(Vector3.up * verticalThrustFactor * Time.deltaTime);
 
             if (!audioSource.isPlaying)
                 audioSource.Play();
@@ -73,5 +68,23 @@ public class RocketBehavior : MonoBehaviour
         rigidBody.freezeRotation = false;
     }//end of method processRotation
 
+    private void OnCollisionEnter(Collision collision)
+    {
+        Debug.Log("Collided with: " + collision.gameObject.name);
 
+        switch (collision.gameObject.tag)
+        {
+            case friendlyTag:
+                //do nothing
+                Debug.Log("Collision is Friendly.");
+                break;
+            case fuelTag:
+                Debug.Log("Collision is Fuel");
+                break;
+            default:
+                Debug.Log("Dead");
+                break;
+        }
+
+    }
 }
