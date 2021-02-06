@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class RocketBehavior : MonoBehaviour
 {
@@ -10,6 +11,7 @@ public class RocketBehavior : MonoBehaviour
 
     private const string friendlyTag = "Friendly";
     private const string fuelTag = "Fuel";
+    private const string finishTag = "Finish";
 
     private AudioSource audioSource;
     private Rigidbody rigidBody;
@@ -70,16 +72,16 @@ public class RocketBehavior : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        Debug.Log("Collided with: " + collision.gameObject.name);
-
         switch (collision.gameObject.tag)
         {
             case friendlyTag:
                 //do nothing
-                Debug.Log("Collision is Friendly.");
                 break;
             case fuelTag:
                 Debug.Log("Collision is Fuel");
+                break;
+            case finishTag:
+                Debug.Log("Collision is Finish");
                 break;
             default:
                 Debug.Log("Dead");
