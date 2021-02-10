@@ -51,6 +51,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   verticalThrustFactor: 900
   rotationalThrustFactor: 100
+  sceneLoadDelay: 1
+  sceneRestartDelay: 3
 --- !u!54 &8800725003256991227
 Rigidbody:
   m_ObjectHideFlags: 0

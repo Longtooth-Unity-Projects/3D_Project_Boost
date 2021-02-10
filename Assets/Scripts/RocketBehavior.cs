@@ -6,8 +6,19 @@ using UnityEngine.SceneManagement;
 
 public class RocketBehavior : MonoBehaviour
 {
+    enum PlayerState
+    {
+        alive,
+        dying,
+        transcending
+    }
+    PlayerState playerState = PlayerState.alive;
+
+
     [SerializeField] float verticalThrustFactor = 900f;
     [SerializeField] float rotationalThrustFactor = 100f;
+    [SerializeField] float sceneLoadDelay = 1f;
+    [SerializeField] float sceneRestartDelay = 3f;
 
     private const string friendlyTag = "Friendly";
     private const string fuelTag = "Fuel";
@@ -27,9 +38,14 @@ public class RocketBehavior : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        processVerticalThrust();
-        processRotation();
-    }
+        if (playerState == PlayerState.alive)
+        {
+            processVerticalThrust();
+            processRotation();
+        }
+        else if (playerState == PlayerState.dying && audioSource.isPlaying)
+            audioSource.Stop();
+    }// end of method Update
 
 
 
@@ -72,19 +88,22 @@ public class RocketBehavior : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
+        if (playerState != PlayerState.alive) { return; }
+
         switch (collision.gameObject.tag)
         {
             case friendlyTag:
                 //do nothing
                 break;
             case fuelTag:
-                Debug.Log("Collision is Fuel");
                 break;
             case finishTag:
-                Debug.Log("Collision is Finish");
+                playerState = PlayerState.transcending;
+                FindObjectOfType<SceneLoader>().LoadNextScene(sceneLoadDelay);
                 break;
             default:
-                Debug.Log("Dead");
+                playerState = PlayerState.dying;
+                FindObjectOfType<SceneLoader>().RestartScene(sceneRestartDelay);
                 break;
         }
 
