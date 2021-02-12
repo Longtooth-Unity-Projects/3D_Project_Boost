@@ -14,16 +14,27 @@ public class RocketBehavior : MonoBehaviour
     }
     PlayerState playerState = PlayerState.alive;
 
+    
+    [SerializeField] private float verticalThrustFactor = 900f;
+    [SerializeField] private float rotationalThrustFactor = 100f;
+    [SerializeField] private float sceneLoadDelay = 1f;
+    [SerializeField] private float sceneRestartDelay = 3f;
 
-    [SerializeField] float verticalThrustFactor = 900f;
-    [SerializeField] float rotationalThrustFactor = 100f;
-    [SerializeField] float sceneLoadDelay = 1f;
-    [SerializeField] float sceneRestartDelay = 3f;
+    [SerializeField] private AudioClip sfx_rocketThrust;
+    [SerializeField] private AudioClip sfx_rocketCrash;
+    [SerializeField] private AudioClip sfx_levelComplete;
+
+    [SerializeField] private ParticleSystem particle_rocketThrust; //TODO fix this, doesnt show correctly, currently stop is commented out
+    [SerializeField] private ParticleSystem particle_rocketExplosion;
+    [SerializeField] private ParticleSystem particle_rocketSuccess;
 
     private const string friendlyTag = "Friendly";
     private const string fuelTag = "Fuel";
     private const string finishTag = "Finish";
 
+    bool collisionsEnabled = true;
+
+    //cached references
     private AudioSource audioSource;
     private Rigidbody rigidBody;
 
@@ -40,55 +51,59 @@ public class RocketBehavior : MonoBehaviour
     {
         if (playerState == PlayerState.alive)
         {
-            processVerticalThrust();
-            processRotation();
+            processVerticalThrustInput();
+            processRotationInput();
         }
-        else if (playerState == PlayerState.dying && audioSource.isPlaying)
-            audioSource.Stop();
+
+        if(Debug.isDebugBuild)
+        {
+            respondToDebugKeys();
+        }
+        
     }// end of method Update
 
 
 
-    private void processVerticalThrust()
+    private void processVerticalThrustInput()
     {
         if (Input.GetKey(KeyCode.Space))
         {
             rigidBody.AddRelativeForce(Vector3.up * verticalThrustFactor * Time.deltaTime);
 
             if (!audioSource.isPlaying)
-                audioSource.Play();
+                audioSource.PlayOneShot(sfx_rocketThrust);
+
+            particle_rocketThrust.Play();
         }
-        else if (Input.GetKeyUp(KeyCode.Space))
+        else
         {
-            if (audioSource.isPlaying)
-                audioSource.Stop();
+            audioSource.Stop();
+            //particle_rocketThrust.Stop();
         }
     }//end of method processThrust
 
 
-    private void processRotation()
+    private void processRotationInput()
     {
-        //take manual control of rotation
-        
+
+        //remove rotation due to physics, if we use here, there is less movement as opposed to using it for each keystroke
+        //rigidBody.angularVelocity = Vector3.zero;
 
         if (Input.GetKey(KeyCode.A))
         {
-            rigidBody.freezeRotation = true;
+            rigidBody.angularVelocity = Vector3.zero;
             transform.Rotate(Vector3.forward * rotationalThrustFactor * Time.deltaTime);
         }
         else if (Input.GetKey(KeyCode.D))
         {
-            rigidBody.freezeRotation = true;
+            rigidBody.angularVelocity = Vector3.zero;
             transform.Rotate(Vector3.back * rotationalThrustFactor * Time.deltaTime);
         }
-
-        //relinquish control of rotation
-        rigidBody.freezeRotation = false;
     }//end of method processRotation
 
     private void OnCollisionEnter(Collision collision)
     {
-        if (playerState != PlayerState.alive) { return; }
+        if (playerState != PlayerState.alive || !collisionsEnabled) { return; }
 
         switch (collision.gameObject.tag)
         {
@@ -98,14 +113,32 @@ public class RocketBehavior : MonoBehaviour
             case fuelTag:
                 break;
             case finishTag:
+                audioSource.Stop();
+                audioSource.PlayOneShot(sfx_levelComplete);
+                particle_rocketSuccess.Play();
                 playerState = PlayerState.transcending;
                 FindObjectOfType<SceneLoader>().LoadNextScene(sceneLoadDelay);
                 break;
             default:
+                //destruction of ship
+                audioSource.Stop();
+                audioSource.PlayOneShot(sfx_rocketCrash);
+                particle_rocketExplosion.Play();
                 playerState = PlayerState.dying;
                 FindObjectOfType<SceneLoader>().RestartScene(sceneRestartDelay);
                 break;
-        }
+        }//end of switch
+    }//end of OnCollisionEnter
 
-    }
+    void respondToDebugKeys()
+    {
+        if (Input.GetKeyDown(KeyCode.L))
+        {
+            FindObjectOfType<SceneLoader>().LoadNextScene();
+        }
+        else if(Input.GetKeyDown(KeyCode.C))
+        {
+            collisionsEnabled = !collisionsEnabled;
+        }
+    }//end of respond to debug keys
 }
